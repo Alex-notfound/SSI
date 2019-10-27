@@ -13,10 +13,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Base64;
 
-/**
- *
- * @author ribadas
- */
 public class PaqueteDAO {
 
 	public final static String MARCA_CABECERA = "-----";
@@ -109,7 +105,7 @@ public class PaqueteDAO {
 			linea = in.readLine();
 		}
 		if (linea.equals(FIN_PAQUETE)) {
-			return null; // No hay más bloques
+			return null; // No hay mas bloques
 		} else {
 			Bloque result = new Bloque();
 			result.setNombre(extraerNombreBloque(linea));

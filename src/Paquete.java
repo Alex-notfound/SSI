@@ -4,10 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- *
- * @author ribadas
- */
 public class Paquete {
 
 	private Map<String, Bloque> bloques;
