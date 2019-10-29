@@ -1,3 +1,4 @@
+
 public class Bloque {
 	private String nombre;
 	private byte[] contenido;
