@@ -26,17 +26,14 @@ public class DesempaquetarCredencial {
 		System.out.println(nombresBloque.toString());
 
 		Security.addProvider(new BouncyCastleProvider());
-
 		PublicKey clavePublica = Seguridad.getPublicKey(new File(args[args.length - 1]));
-		System.out.println("DESENCRIPTAR CLAVE - ");
-		byte[] claveDescifrada = Seguridad.desencriptarRSA(paquete.getContenidoBloque(nombresBloque.get(0)), clavePublica);
-		SecretKey clave = new SecretKeySpec(claveDescifrada, "DES");
 
-		System.out.println("DESENCRIPTANDO DATOS PEREGREINO - ");
+		byte[] claveDescifrada = Seguridad.desencriptarRSA(paquete.getContenidoBloque(nombresBloque.get(0)),
+				clavePublica);
+		SecretKey clave = new SecretKeySpec(claveDescifrada, "DES");
 		byte[] datosDescifrados = Seguridad.desencriptarDES(paquete.getContenidoBloque(nombresBloque.get(1)), clave);
 		byte[] resumen = Seguridad.hash(new String(datosDescifrados, "UTF-8"));
 
-		System.out.print("VALIDANDO FIRMA - ");
 		System.out.println(
 				Seguridad.validarFirma(resumen, clavePublica, paquete.getContenidoBloque(nombresBloque.get(2))));
 

@@ -2,9 +2,8 @@
 import java.io.File;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -13,7 +12,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class GenerarCredencial {
 
-	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
 
 		if (args.length != 3) {
@@ -23,35 +21,26 @@ public class GenerarCredencial {
 			System.exit(1);
 		}
 
-		Scanner reader = new Scanner(new File(args[0]));
-		String[] nombreCampos = { "nombre", "dni", "domicilio", "fechaCreacion", "lugarCreacion",
+		String[] nombresCampo = { "nombre", "dni", "domicilio", "fechaCreacion", "lugarCreacion",
 				"motivacionPeregrinaje" };
-		Map<String, String> datos = new LinkedHashMap<>();
-		int i = 0;
-		while (reader.hasNextLine()) {
-			datos.put(nombreCampos[i++], reader.nextLine());
-		}
-		String datosJsonOrigen = JSONUtils.map2json(datos);
+		String[] nombresBloque = { "datosPeregrino", "claveCifrada", "firma" };
+		String datosJsonOrigen = Seguridad.castToJsonString(nombresCampo, args[0]);
+		byte[] resumen = Seguridad.hash(datosJsonOrigen);
+		List<byte[]> contenido = new ArrayList<>();
+		Paquete paquete = new Paquete();
 
 		Security.addProvider(new BouncyCastleProvider());
 		KeyGenerator generadorDES = KeyGenerator.getInstance("DES");
 		generadorDES.init(56); // clave de 56 bits
+
 		SecretKey clave = generadorDES.generateKey();
 		PrivateKey clavePrivada = Seguridad.getPrivateKey(new File(args[2]));
 
-		byte[] datosCifrados = Seguridad.encriptarDES(datosJsonOrigen.getBytes(), clave);
+		contenido.add(Seguridad.encriptarDES(datosJsonOrigen.getBytes(), clave));
+		contenido.add(Seguridad.encriptarRSA(clave.getEncoded(), clavePrivada));
+		contenido.add(Seguridad.generarFirma(resumen, clavePrivada));
 
-		byte[] claveCifrada = Seguridad.encriptarRSA(clave.getEncoded(), clavePrivada);
-
-		byte[] resumen = Seguridad.hash(datosJsonOrigen);
-
-		byte[] firma = Seguridad.generarFirma(resumen, clavePrivada);
-		Paquete paquete = new Paquete();
-		String[] nombresBloque = { "datosPeregrino", "claveCifrada", "firma" };
-		paquete.anadirBloque(nombresBloque[0], datosCifrados);
-		paquete.anadirBloque(nombresBloque[1], claveCifrada);
-		paquete.anadirBloque(nombresBloque[2], firma);
-		PaqueteDAO.escribirPaquete(args[1], paquete);
+		Seguridad.empaquetar(paquete, args[1], nombresBloque, contenido);
 		System.out.println("CREDENCIAL GENERADA EN " + args[1]);
 
 	}

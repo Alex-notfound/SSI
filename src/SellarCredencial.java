@@ -1,10 +1,11 @@
 import java.io.File;
-import java.security.PublicKey;
+import java.security.PrivateKey;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -18,28 +19,26 @@ public class SellarCredencial {
 			System.exit(1);
 		}
 
-		// packCPV 0 clave.publica
-		Paquete paquete = PaqueteDAO.leerPaquete(args[0]);
-		List<String> nombresBloque = paquete.getNombresBloque();
-		System.out.println(nombresBloque.toString());
+		String[] nombreCampos = { "nombre", "fechaCreacion", "lugarCreacion", "incidencias" };
+		String datosJsonOrigen = Seguridad.castToJsonString(nombreCampos, args[0]);
+		String[] nombresBloque = { args[1] + "datosCifrados", args[1] + "claveCifrada", args[1] + "firma" };
+		Paquete paquete = PaqueteDAO.leerPaquete(args[1]);
+		List<byte[]> contenido = new ArrayList<>();
+		byte[] resumen = Seguridad.hash(datosJsonOrigen);
 
 		Security.addProvider(new BouncyCastleProvider());
+		KeyGenerator generadorDES = KeyGenerator.getInstance("DES");
+		generadorDES.init(56); // clave de 56 bits
 
-		PublicKey clavePublica = Seguridad.getPublicKey(new File(args[2]));
-		System.out.println("DESENCRIPTAR CLAVE - ");
-		byte[] claveDescifrada = Seguridad.desencriptarRSA(paquete.getContenidoBloque(nombresBloque.get(0)),
-				clavePublica);
-		SecretKey clave = new SecretKeySpec(claveDescifrada, "DES");
+		SecretKey clave = generadorDES.generateKey();
+		PrivateKey clavePrivada = Seguridad.getPrivateKey(new File(args[args.length - 1]));
 
-		System.out.println("DESENCRIPTANDO DATOS PEREGREINO - ");
-		byte[] datosDescifrados = Seguridad.desencriptarDES(paquete.getContenidoBloque(nombresBloque.get(1)), clave);
-		byte[] resumen = Seguridad.hash(new String(datosDescifrados, "UTF-8"));
+		contenido.add(Seguridad.encriptarDES(datosJsonOrigen.getBytes(), clave));
+		contenido.add(Seguridad.encriptarRSA(clave.getEncoded(), clavePrivada));
+		contenido.add(Seguridad.generarFirma(resumen, clavePrivada));
 
-		System.out.print("VALIDANDO FIRMA - ");
-		System.out.println(
-				Seguridad.validarFirma(resumen, clavePublica, paquete.getContenidoBloque(nombresBloque.get(2))));
-
-		
+		Seguridad.empaquetar(paquete, args[0], nombresBloque, contenido);
+		System.out.println("CREDENCIAL SELLADA EN " + args[1]);
 	}
 
 }

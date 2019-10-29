@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
@@ -7,11 +8,26 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
 public class Seguridad {
+
+	public static String castToJsonString(String[] nombreCampos, String fileName) throws FileNotFoundException {
+		try (Scanner reader = new Scanner(new File(fileName))) {
+			Map<String, String> datos = new LinkedHashMap<>();
+			int i = 0;
+			while (reader.hasNextLine()) {
+				datos.put(nombreCampos[i++], reader.nextLine());
+			}
+			return JSONUtils.map2json(datos);
+		}
+	}
 
 	public static byte[] generarFirma(byte[] resumen, PrivateKey clavePrivada) throws Exception {
 		Signature firma = Signature.getInstance("MD5withRSA", "BC");
@@ -69,6 +85,7 @@ public class Seguridad {
 		return cifrador.doFinal(resumen);
 	}
 
+	@SuppressWarnings("resource")
 	public static PrivateKey getPrivateKey(File clavePrivada) throws Exception {
 		byte[] buffer = new byte[(int) clavePrivada.length()];
 		new FileInputStream(clavePrivada).read(buffer);
@@ -76,6 +93,7 @@ public class Seguridad {
 		return kf.generatePrivate(new PKCS8EncodedKeySpec(buffer));
 	}
 
+	@SuppressWarnings("resource")
 	public static PublicKey getPublicKey(File clavePublica) throws Exception {
 		byte[] buffer = new byte[(int) clavePublica.length()];
 		new FileInputStream(clavePublica).read(buffer);
@@ -85,5 +103,12 @@ public class Seguridad {
 
 	public static void mostrarBytes(byte[] buffer) {
 		System.out.write(buffer, 0, buffer.length);
+	}
+
+	public static void empaquetar(Paquete paquete, String fileName, String[] nombresBloque, List<byte[]> contenido) {
+		for (int i = 0; i < nombresBloque.length; i++) {
+			paquete.anadirBloque(nombresBloque[i], contenido.get(i));
+		}
+		PaqueteDAO.escribirPaquete(fileName, paquete);
 	}
 }
