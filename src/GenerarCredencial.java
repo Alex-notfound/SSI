@@ -58,10 +58,10 @@ public class GenerarCredencial {
 		byte[] firma = generarFirma(resumen, clavePrivada);
 
 		Paquete paquete = new Paquete();
-		String[] nombreCamposPaquete = { "datosPeregrino", "claveCifrada", "firma" };
-		paquete.anadirBloque(nombreCamposPaquete[0], datosCifrados);
-		paquete.anadirBloque(nombreCamposPaquete[1], claveCifrada);
-		paquete.anadirBloque(nombreCamposPaquete[2], firma);
+		String[] nombresBloque = { "datosPeregrino", "claveCifrada", "firma" };
+		paquete.anadirBloque(nombresBloque[0], datosCifrados);
+		paquete.anadirBloque(nombresBloque[1], claveCifrada);
+		paquete.anadirBloque(nombresBloque[2], firma);
 		PaqueteDAO.escribirPaquete(args[1], paquete);
 
 	}

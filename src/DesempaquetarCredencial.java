@@ -8,20 +8,18 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.List;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class DesempaquetarCredencial {
 
 	public static void main(String[] args) throws Exception {
-		if (args.length < 2 || args.length != Integer.parseInt(args[1]) * 3) {
+		if (args.length < 2 || args.length < 2 + Integer.parseInt(args[1]) * 3) {
 			System.out.println("Desempaquetador de credencial");
 			System.out.println("\tSintaxis:   java DesempaquetarCredencial <fichero paquete> <num. albergues (N)> \r\n"
 					+ "<identificador albergue 1> <ficheros claves albergue 1> \r\n" + "... \r\n"
@@ -30,50 +28,24 @@ public class DesempaquetarCredencial {
 			System.exit(1);
 		}
 
-		Scanner reader = new Scanner(new File(args[0]));
-		String[] nombreCampos = { "nombre", "dni", "domicilio", "fechaCreacion", "lugarCreacion",
-				"motivacionPeregrinaje" };
-		Map<String, String> datos = new LinkedHashMap<>();
-		int i = 0;
-		while (reader.hasNextLine()) {
-			datos.put(nombreCampos[i++], reader.nextLine());
-		}
-		String datosJsonOrigen = JSONUtils.map2json(datos);
+		// packCPV 0 clave.publica
+		Paquete paquete = PaqueteDAO.leerPaquete(args[0]);
+		List<String> nombresBloque = paquete.getNombresBloque();
+		System.out.println(nombresBloque.toString());
 
 		Security.addProvider(new BouncyCastleProvider());
-		KeyGenerator generadorDES = KeyGenerator.getInstance("DES");
-		generadorDES.init(56); // clave de 56 bits
-		SecretKey clave = generadorDES.generateKey();
-		PrivateKey clavePrivada = getPrivateKey(new File(args[1]));
+
 		PublicKey clavePublica = getPublicKey(new File(args[2]));
+		System.out.println("DESENCRIPTAR CLAVE - ");
+		byte[] claveDescifrada = desencriptarRSA(paquete.getContenidoBloque(nombresBloque.get(0)), clavePublica);
+		SecretKey clave = new SecretKeySpec(claveDescifrada, "DES");
 
-		System.out.println("ENCRIPTANDO DATOS PEREGRINO - ");
-		byte[] datosCifrados = encriptarDES(datosJsonOrigen.getBytes(), clave);
+		System.out.println("DESENCRIPTANDO DATOS PEREGREINO - ");
+		byte[] datosDescifrados = desencriptarDES(paquete.getContenidoBloque(nombresBloque.get(1)), clave);
+		byte[] resumen = hash(new String(datosDescifrados, "UTF-8"));
 
-		System.out.println("ENCRIPTANDO CLAVE - ");
-		byte[] claveCifrada = encriptarRSA(clave.getEncoded(), clavePrivada);
-
-		System.out.println("HASH - ");
-		byte[] resumen = hash(datosJsonOrigen);
-
-		System.out.println("CREANDO FIRMA - ");
-		byte[] firma = generarFirma(resumen, clavePrivada);
-
-		Paquete paquete = new Paquete();
-		String[] nombreCamposPaquete = { "datosPeregrino", "claveCifrada", "firma" };
-		paquete.anadirBloque(nombreCamposPaquete[0], datosCifrados);
-		paquete.anadirBloque(nombreCamposPaquete[1], claveCifrada);
-		paquete.anadirBloque(nombreCamposPaquete[2], firma);
-		PaqueteDAO.escribirPaquete("CPV", paquete);
-
-//	System.out.println("\nDESENCRIPTAR CLAVE - ");
-//	byte[] claveDescifrada = desencriptarRSA(claveCifrada, clavePublica);
-//
-//	System.out.println("\nVALIDANDO FIRMA - ");
-//	System.out.println(validarFirma(resumen, clavePublica, firma));
-//
-//	System.out.println("DESENCRIPTANDO DATOS PEREGREINO - ");
-//	byte[] datosDescifrados = desencriptarDES(datosCifrados, clave);
+		System.out.print("VALIDANDO FIRMA - ");
+		System.out.println(validarFirma(resumen, clavePublica, paquete.getContenidoBloque(nombresBloque.get(2))));
 
 	}
 
