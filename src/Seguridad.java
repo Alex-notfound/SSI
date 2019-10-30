@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
@@ -73,20 +74,21 @@ public class Seguridad {
 		return toret;
 	}
 
-	public static byte[] encriptarRSA(byte[] resumen, PrivateKey clavePrivada) throws Exception {
+	public static byte[] encriptarRSA(byte[] resumen, Key clavePrivada) throws Exception {
 		Cipher cifrador = Cipher.getInstance("RSA", "BC"); // Hace uso del provider BC
 		cifrador.init(Cipher.ENCRYPT_MODE, clavePrivada);
 		return cifrador.doFinal(resumen);
 	}
 
-	public static byte[] desencriptarRSA(byte[] resumen, PublicKey clavePublica) throws Exception {
+	public static byte[] desencriptarRSA(byte[] resumen, Key clavePublica) throws Exception {
 		Cipher cifrador = Cipher.getInstance("RSA", "BC"); // Hace uso del provider BC
 		cifrador.init(Cipher.DECRYPT_MODE, clavePublica);
 		return cifrador.doFinal(resumen);
 	}
 
 	@SuppressWarnings("resource")
-	public static PrivateKey getPrivateKey(File clavePrivada) throws Exception {
+	public static PrivateKey getPrivateKey(String fileName) throws Exception {
+		File clavePrivada = new File(fileName);
 		byte[] buffer = new byte[(int) clavePrivada.length()];
 		new FileInputStream(clavePrivada).read(buffer);
 		KeyFactory kf = KeyFactory.getInstance("RSA", "BC");
@@ -94,7 +96,8 @@ public class Seguridad {
 	}
 
 	@SuppressWarnings("resource")
-	public static PublicKey getPublicKey(File clavePublica) throws Exception {
+	public static PublicKey getPublicKey(String fileName) throws Exception {
+		File clavePublica = new File(fileName);
 		byte[] buffer = new byte[(int) clavePublica.length()];
 		new FileInputStream(clavePublica).read(buffer);
 		KeyFactory kf = KeyFactory.getInstance("RSA", "BC");

@@ -1,4 +1,3 @@
-import java.io.File;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.util.ArrayList;
@@ -13,9 +12,11 @@ public class SellarCredencial {
 
 	public static void main(String[] args) throws Exception {
 		if (args.length < 2 || args.length < 2 + Integer.parseInt(args[1]) * 3) {
-			System.out.println("Desempaquetador de credencial");
+			System.out.println("Sellador de credencial");
 			System.out.println("\tSintaxis:   java SellarCredencial <fichero paquete> <identificador de albergue> \n"
-					+ "<ficheros con las claves necesarias> ");
+					+ "<fichero clave privada albergue> <fichero clave publica peregrino");
+			System.out.println("java SellarCredencial CPVPack albergue1 claveAlbergue.privada clavePeregrino.publica");
+// java SellarCredencial CPVPack albergue1 claveAlbergue.privada clavePeregrino.publica
 			System.exit(1);
 		}
 
@@ -31,7 +32,7 @@ public class SellarCredencial {
 		generadorDES.init(56); // clave de 56 bits
 
 		SecretKey clave = generadorDES.generateKey();
-		PrivateKey clavePrivada = Seguridad.getPrivateKey(new File(args[args.length - 1]));
+		PrivateKey clavePrivada = Seguridad.getPrivateKey(args[args.length - 1]);
 
 		contenido.add(Seguridad.encriptarDES(datosJsonOrigen.getBytes(), clave));
 		contenido.add(Seguridad.encriptarRSA(clave.getEncoded(), clavePrivada));
