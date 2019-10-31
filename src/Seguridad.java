@@ -50,6 +50,13 @@ public class Seguridad {
 		return messageDigest.digest();
 	}
 
+	public static byte[] hash(String datos1, byte[] datos2) throws Exception {
+		MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+		messageDigest.update(datos1.getBytes());
+		messageDigest.update(datos2);
+		return messageDigest.digest();
+	}
+	
 	public static byte[] encriptarDES(byte[] datos, SecretKey clave) throws Exception {
 		Cipher cifrador = Cipher.getInstance("DES/ECB/PKCS5Padding");
 		cifrador.init(Cipher.ENCRYPT_MODE, clave);
@@ -86,20 +93,22 @@ public class Seguridad {
 		return cifrador.doFinal(resumen);
 	}
 
-	@SuppressWarnings("resource")
 	public static PrivateKey getPrivateKey(String fileName) throws Exception {
 		File clavePrivada = new File(fileName);
 		byte[] buffer = new byte[(int) clavePrivada.length()];
-		new FileInputStream(clavePrivada).read(buffer);
+		FileInputStream in = new FileInputStream(clavePrivada);
+		in.read(buffer);
 		KeyFactory kf = KeyFactory.getInstance("RSA", "BC");
+		in.close();
 		return kf.generatePrivate(new PKCS8EncodedKeySpec(buffer));
 	}
 
-	@SuppressWarnings("resource")
 	public static PublicKey getPublicKey(String fileName) throws Exception {
 		File clavePublica = new File(fileName);
 		byte[] buffer = new byte[(int) clavePublica.length()];
-		new FileInputStream(clavePublica).read(buffer);
+		FileInputStream in = new FileInputStream(clavePublica);
+		in.read(buffer);
+		in.close();
 		KeyFactory kf = KeyFactory.getInstance("RSA", "BC");
 		return kf.generatePublic(new X509EncodedKeySpec(buffer));
 	}

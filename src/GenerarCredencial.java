@@ -25,7 +25,7 @@ public class GenerarCredencial {
 		}
 
 		String[] nombresCampo = { "nombre", "dni", "domicilio", "fechaCreacion", "lugarCreacion", "motivacionPeregrinaje" };
-		String[] nombresBloque = { "datosPeregrino", "claveCifrada", "firma" };
+		String[] nombresBloque = { "datos", "clave", "firma" };
 		String datosJsonOrigen = Seguridad.castToJsonString(nombresCampo, args[0]);
 		byte[] resumen = Seguridad.hash(datosJsonOrigen);
 		List<byte[]> contenido = new ArrayList<>();

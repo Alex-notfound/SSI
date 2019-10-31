@@ -23,20 +23,38 @@ public class DesempaquetarCredencial {
 		}
 
 		Paquete paquete = PaqueteDAO.leerPaquete(args[0]);
-		List<String> nombresBloque = paquete.getNombresBloque();
-		System.out.println(nombresBloque.toString());
 
 		Security.addProvider(new BouncyCastleProvider());
-		PublicKey clavePublicaPeregrino = Seguridad.getPublicKey(args[args.length - 1]);
 		PrivateKey clavePrivadaOficina = Seguridad.getPrivateKey(args[args.length - 2]);
+		PublicKey clavePublicaPeregrino = Seguridad.getPublicKey(args[args.length - 1]);
 
-		byte[] claveDescifrada = Seguridad.desencriptarRSA(paquete.getContenidoBloque(nombresBloque.get(0)), clavePrivadaOficina);
+		byte[] claveDescifrada = Seguridad.desencriptarRSA(paquete.getContenidoBloque("clave"), clavePrivadaOficina);
 		SecretKey clave = new SecretKeySpec(claveDescifrada, "DES");
-		byte[] datosDescifrados = Seguridad.desencriptarDES(paquete.getContenidoBloque(nombresBloque.get(1)), clave);
+		byte[] datosDescifrados = Seguridad.desencriptarDES(paquete.getContenidoBloque("datos"), clave);
 		byte[] resumen = Seguridad.hash(new String(datosDescifrados, "UTF-8"));
 
-		System.out.println(
-				Seguridad.validarFirma(resumen, clavePublicaPeregrino, paquete.getContenidoBloque(nombresBloque.get(2))));
+		if (Seguridad.validarFirma(resumen, clavePublicaPeregrino, paquete.getContenidoBloque("firma"))) {
+			System.out.println("Los datos del peregrino son correctos: ");
+			Seguridad.mostrarBytes(datosDescifrados);
+
+			PublicKey clavePublicaAlbergue;
+			for (int i = 2; i <= Integer.parseInt(args[1]) * 2; i += 2) {
+
+				clavePublicaAlbergue = Seguridad.getPublicKey(args[i + 1]);
+				claveDescifrada = Seguridad.desencriptarRSA(paquete.getContenidoBloque(args[i] + "_clave"), clavePrivadaOficina);
+				clave = new SecretKeySpec(claveDescifrada, "DES");
+				datosDescifrados = Seguridad.desencriptarDES(paquete.getContenidoBloque(args[i] + "_datos"), clave);
+				resumen = Seguridad.hash(new String(datosDescifrados, "UTF-8"), paquete.getContenidoBloque("firma"));
+				if (Seguridad.validarFirma(resumen, clavePublicaAlbergue, paquete.getContenidoBloque(args[i] + "_firma"))) {
+					System.out.println("\nSello de " + args[i] + " válido: ");
+					Seguridad.mostrarBytes(datosDescifrados);
+				} else {
+					System.out.println("\nSello de " + args[i] + " NO VÁLIDO");
+				}
+			}
+		} else {
+			System.out.println("LOS DATOS HAN SIDO MANIPULADOS");
+		}
 
 	}
 
