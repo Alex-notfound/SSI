@@ -19,15 +19,14 @@ import javax.crypto.SecretKey;
 
 public class Seguridad {
 
-	public static String castToJsonString(String[] nombreCampos, String fileName) throws FileNotFoundException {
-		try (Scanner reader = new Scanner(new File(fileName))) {
-			Map<String, String> datos = new LinkedHashMap<>();
-			int i = 0;
-			while (reader.hasNextLine()) {
-				datos.put(nombreCampos[i++], reader.nextLine());
-			}
-			return JSONUtils.map2json(datos);
+	public static String castToJsonString(String[] nombreCampos) throws FileNotFoundException {
+		Scanner in = new Scanner(System.in);
+		Map<String, String> datos = new LinkedHashMap<>();
+		for (int i = 0; i < nombreCampos.length; i++) {
+			System.out.println("Introduce " + nombreCampos[i] + ": ");
+			datos.put(nombreCampos[i], in.nextLine());
 		}
+		return JSONUtils.map2json(datos);
 	}
 
 	public static byte[] generarFirma(byte[] resumen, PrivateKey clavePrivada) throws Exception {
@@ -56,7 +55,7 @@ public class Seguridad {
 		messageDigest.update(datos2);
 		return messageDigest.digest();
 	}
-	
+
 	public static byte[] encriptarDES(byte[] datos, SecretKey clave) throws Exception {
 		Cipher cifrador = Cipher.getInstance("DES/ECB/PKCS5Padding");
 		cifrador.init(Cipher.ENCRYPT_MODE, clave);

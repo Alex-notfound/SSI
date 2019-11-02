@@ -14,19 +14,18 @@ public class GenerarCredencial {
 
 	public static void main(String[] args) throws Exception {
 
-		if (args.length != 4) {
+		if (args.length != 3) {
 			System.out.println("Generador de credencial");
-			System.out.println("\tSintaxis:   java GenerarCredencial <fichero datos> <nombre paquete> "
-					+ "<fichero clave publica oficina> <fichero clave privada peregrino");
-			System.out.println("\tEjemplo: java GenerarCredencial datos_peregrino.txt CPVPack "
-					+ "claveOficina.publica clavePeregrino.privada");
-// java GenerarCredencial datos_peregrino.txt CPVPack claveOficina.publica clavePeregrino.privada
+			System.out.println("\tSintaxis:   java GenerarCredencial <nombre paquete> <fichero clave publica oficina> "
+					+ "<fichero clave privada peregrino");
+			System.out.println("Ejemplo: java GenerarCredencial CPVPack claveOficina.publica clavePeregrino.privada");
 			System.exit(1);
 		}
 
-		String[] nombresCampo = { "nombre", "dni", "domicilio", "fechaCreacion", "lugarCreacion", "motivacionPeregrinaje" };
+		String[] nombresCampo = { "nombre", "DNI", "domicilio", "fecha de creacion", "lugar de creacion",
+				"motivacion del peregrinaje" };
 		String[] nombresBloque = { "datos", "clave", "firma" };
-		String datosJsonOrigen = Seguridad.castToJsonString(nombresCampo, args[0]);
+		String datosJsonOrigen = Seguridad.castToJsonString(nombresCampo);
 		byte[] resumen = Seguridad.hash(datosJsonOrigen);
 		List<byte[]> contenido = new ArrayList<>();
 		Paquete paquete = new Paquete();
@@ -36,15 +35,15 @@ public class GenerarCredencial {
 		generadorDES.init(56);
 
 		SecretKey clave = generadorDES.generateKey();
-		PublicKey clavePublicaOficina = Seguridad.getPublicKey(args[2]);
-		PrivateKey clavePrivadaPeregrino = Seguridad.getPrivateKey(args[3]);
+		PublicKey clavePublicaOficina = Seguridad.getPublicKey(args[1]);
+		PrivateKey clavePrivadaPeregrino = Seguridad.getPrivateKey(args[2]);
 
 		contenido.add(Seguridad.encriptarDES(datosJsonOrigen.getBytes(), clave));
 		contenido.add(Seguridad.encriptarRSA(clave.getEncoded(), clavePublicaOficina));
 		contenido.add(Seguridad.generarFirma(resumen, clavePrivadaPeregrino));
 
-		Seguridad.empaquetar(paquete, args[1], nombresBloque, contenido);
-		System.out.println("CREDENCIAL GENERADA EN " + args[1]);
+		Seguridad.empaquetar(paquete, args[0], nombresBloque, contenido);
+		System.out.println("CREDENCIAL GENERADA EN " + args[0]);
 
 	}
 
